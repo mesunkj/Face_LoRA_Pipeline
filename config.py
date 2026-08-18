@@ -17,6 +17,7 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "output")
 MODELS_DIR = os.path.join(OUTPUT_DIR, "models")
 LOGS_DIR = os.path.join(OUTPUT_DIR, "logs")
 REGISTRY_FILE = os.path.join(BASE_DIR, "lora_registry.json")
+MEMO_FILE = os.path.join(BASE_DIR, "LORA_MEMO.md")
 
 # Pre-processing Configuration
 MIN_FACE_RESOLUTION = 512

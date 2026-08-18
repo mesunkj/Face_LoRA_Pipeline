@@ -12,6 +12,13 @@ class Logger:
         if not os.path.exists(self.registry_file):
             with open(self.registry_file, 'w', encoding='utf-8') as f:
                 json.dump({"faces": []}, f, indent=4)
+                
+        self.memo_file = config.MEMO_FILE
+        if not os.path.exists(self.memo_file):
+            with open(self.memo_file, 'w', encoding='utf-8') as f:
+                f.write("# Face LoRA 訓練與提示詞備忘錄 (Memo)\n\n")
+                f.write("這份文件記錄了每次訓練出來的 LoRA 模型，以及對應的觸發提示詞（Trigger Word）與使用範例。\n\n")
+                f.write("---\n\n")
 
     def log_training(self, face_id, lora_file, trigger_word, r_gan_used):
         """
@@ -42,6 +49,19 @@ class Logger:
             json.dump(registry, f, indent=4)
             
         print(f"[Logger] Logged training results for {face_id} to registry.")
+        
+        # Write to Memo Markdown file
+        example_prompt = config.EVAL_PROMPT_TEMPLATE.replace("{trigger_word}", trigger_word)
+        try:
+            with open(self.memo_file, 'a', encoding='utf-8') as f:
+                f.write(f"### 🎯 Face ID: `{face_id}`\n")
+                f.write(f"- **訓練日期:** {entry['training_date']}\n")
+                f.write(f"- **模型檔案:** `{entry['lora_file']}`\n")
+                f.write(f"- **觸發提示詞 (Trigger Word):** `{trigger_word}`\n")
+                f.write(f"- **Prompt 範例:** \n  > {example_prompt}\n\n")
+                f.write("---\n\n")
+        except Exception as e:
+            print(f"[Logger] Failed to write to memo file: {e}")
 
     def update_evaluation_score(self, face_id, score):
         """
