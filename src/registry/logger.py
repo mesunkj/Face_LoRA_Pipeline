@@ -11,7 +11,7 @@ class Logger:
         self.registry_file = config.REGISTRY_FILE
         if not os.path.exists(self.registry_file):
             with open(self.registry_file, 'w', encoding='utf-8') as f:
-                json.dump({"faces": []}, f, indent=4)
+                json.dump({"faces": []}, f, indent=4, ensure_ascii=False)
                 
         self.memo_file = config.MEMO_FILE
         if not os.path.exists(self.memo_file):
@@ -30,11 +30,14 @@ class Logger:
         # Check if the face_id already exists and update it, else append
         existing_idx = next((i for i, item in enumerate(registry["faces"]) if item["face_id"] == face_id), None)
         
+        example_prompt = config.EVAL_PROMPT_TEMPLATE.replace("{trigger_word}", trigger_word)
+        
         entry = {
             "name": face_id.replace("_", " ").title(),  # Dummy generation
             "face_id": face_id,
             "lora_file": os.path.basename(lora_file) if lora_file else None,
             "trigger_word": trigger_word,
+            "example_prompt": example_prompt,
             "r_gan_used": r_gan_used,
             "training_date": datetime.date.today().isoformat(),
             "evaluation_score": None  # To be filled by evaluation phase
@@ -46,12 +49,11 @@ class Logger:
             registry["faces"].append(entry)
             
         with open(self.registry_file, 'w', encoding='utf-8') as f:
-            json.dump(registry, f, indent=4)
+            json.dump(registry, f, indent=4, ensure_ascii=False)
             
         print(f"[Logger] Logged training results for {face_id} to registry.")
         
         # Write to Memo Markdown file
-        example_prompt = config.EVAL_PROMPT_TEMPLATE.replace("{trigger_word}", trigger_word)
         try:
             with open(self.memo_file, 'a', encoding='utf-8') as f:
                 f.write(f"### 🎯 Face ID: `{face_id}`\n")
@@ -76,7 +78,7 @@ class Logger:
                 break
                 
         with open(self.registry_file, 'w', encoding='utf-8') as f:
-            json.dump(registry, f, indent=4)
+            json.dump(registry, f, indent=4, ensure_ascii=False)
             
         print(f"[Logger] Updated evaluation score for {face_id} to {score:.1f}%")
 

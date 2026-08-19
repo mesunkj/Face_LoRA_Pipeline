@@ -1,3 +1,14 @@
 {
-    "faces": []
+    "faces": [
+        {
+            "name": "Tzuyu子瑜",
+            "face_id": "TZUYU子瑜",
+            "lora_file": "TZUYU子瑜.safetensors",
+            "trigger_word": "TZUYU子瑜",
+            "example_prompt": "A portrait of TZUYU子瑜, raw photo, highly detailed, 8k uhd, dslr",
+            "r_gan_used": true,
+            "training_date": "2026-08-17",
+            "evaluation_score": 91.90593417790076
+        }
+    ]
 }

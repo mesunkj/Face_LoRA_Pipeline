@@ -27,7 +27,10 @@ ENABLE_RGAN_UPSCALING = True
 RGAN_MODEL_PATH = "realesrgan-x4plus.pth"
 
 # Training Configuration (Kohya_ss)
-KOHYA_DIR = os.path.join(BASE_DIR, "kohya_ss")  # Adjust this if Kohya is installed elsewhere
+if IN_COLAB:
+    KOHYA_DIR = "/content/kohya_ss"
+else:
+    KOHYA_DIR = os.path.join(BASE_DIR, "kohya_ss")
 TRAIN_BATCH_SIZE = 1
 LEARNING_RATE = 1e-4
 MAX_TRAIN_STEPS = 1000

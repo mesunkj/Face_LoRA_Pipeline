@@ -32,7 +32,7 @@ class KohyaRunner:
         output_dir = os.path.join(config.MODELS_DIR)
         os.makedirs(output_dir, exist_ok=True)
         
-        num_images = len([f for f in os.listdir(dataset_dir) if f.endswith(('.png', '.jpg', '.jpeg'))])
+        num_images = sum(len([f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg'))]) for _, _, files in os.walk(dataset_dir))
         if num_images == 0:
             print(f"[KohyaRunner] No images found for {face_id} in {dataset_dir}. Skipping.")
             return None

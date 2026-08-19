@@ -1,6 +1,6 @@
 # 自動化 Face LoRA 生產線 (Automated Face LoRA Pipeline)
 
-這是一個全自動的批次處理引擎（Batch Pipeline），專為臉部 LoRA 模型的訓練與驗證所設計。系統能夠自動完成圖片質檢、解析度放大、自動打標、呼叫 Kohya_ss 進行訓練，並最終透過 InsightFace 計算相似度來自動驗證產出的模型。
+這是一個全自動的批次處理引擎（Batch Pipeline），專為臉部 LoRA 模型的訓練與驗證所設計。系統能夠自動完成圖片質檢、解析度放大、自動打標、呼叫 Kohya_ss 進行訓練，並最終透過「兩階段驗收管線」與 InsightFace 計算相似度，自動找出該模型在各場景的「黃金引數 (Golden Rules)」。
 
 ### 📈 評估結果分析
 - 系統會透過 InsightFace 計算人臉的餘弦相似度 (Cosine Similarity)。
@@ -29,6 +29,22 @@
    - **原因**：穩定版的 `diffusers==0.27.2` 依賴了舊版 `huggingface-hub` 中的 `cached_download` 函數，但 Colab 環境預設將 `huggingface-hub` 更新至 `0.26+` 移除了該函數。
    - **解法**：強制將 `huggingface-hub` 降級至 `0.25.2`。
 
+5. **Google Drive 頻繁斷線錯誤 (`Transport endpoint is not connected`)**
+   - **原因**：當 Colab 直接在掛載的 Google Drive (`/content/drive/MyDrive/...`) 上進行大量密集小檔案讀寫（如 `pip install` 與模型訓練）時，極易觸發 Google 的安全機制，導致雲端硬碟掛載點強制中斷。
+   - **解法**：修改系統架構，將 `kohya_ss` 訓練環境強制安裝於 Colab 虛擬機本機端（`/content/kohya_ss`）。藉由犧牲每次重啟約 3 秒的下載時間，徹底根除了環境崩潰的地雷。
+
+6. **嚴苛的靶圖配對導致階段二被忽略 (Benchmark Filename Matching)**
+   - **原因**：腳本原先以極度嚴格的規則（區分大小寫、限用底線）搜尋 `benchmark_images/` 內的靶圖。若使用者以 `Wide Shot.jpg` 直覺命名，系統會因配對失敗而默默略過最重要的 Inpainting 測試。
+   - **解法**：導入「全自動寬容比對邏輯」，系統會自動將檔名轉小寫，並將空格與連字號視為底線處理。確保使用者的直覺命名皆能 100% 被精準捕捉。
+
+7. **過度防呆導致的強制終止 (`sys.exit` Bug)**
+   - **原因**：原設計在階段一分數若低於 70% 則強制 `sys.exit()` 以節省算力。但在小樣本訓練中此條件過於嚴苛，反倒剝奪了使用者查看後續 Inpainting 壓力測試與 CSV 完整數據報表的權益。
+   - **解法**：全面拔除強制終止機制，改為「黃色警告但繼續執行」。保證無論分數高低，系統皆會完美走完流程並產出報告。
+
+8. **導入「起飛前環境檢查 (Pre-flight Check)」機制**
+   - **原因**：過往若使用者忘記更改 `FACE_ID` 或少放靶圖，系統仍會先耗費數分鐘下載百 MB 的相依套件與模型後才報錯崩潰，嚴重浪費時間。
+   - **解法**：在 Colab 自動化驗收管線的**最頂端**植入嚴格檢查清單。在下載任何套件前，先行確認模型存在與靶圖對齊，並透過 `input()` 交由使用者確認後放行，將掌控權徹底還給使用者。
+
 ### 📦 黃金穩定版套件清單
 在進行獨立測試或重新部署環境時，強烈建議使用以下經過驗證的套件組合：
 ```bash
@@ -48,7 +64,7 @@ pip install -q diffusers==0.27.2 peft==0.10.0 transformers==4.40.0 accelerate==0
 1. **自動化質檢與放大 (QC & Pre-processing)**: 自動偵測臉部範圍並進行裁切，對於低解析度（低於 512x512）的圖片，支援呼叫 R-GAN (如 Real-ESRGAN) 演算法自動「腦補」放大。
 2. **自動化訓練 (Automated Training)**: 根據輸入圖片數量動態計算合適的 `max_train_steps`，並封裝指令呼叫 Kohya 的 `train_network.py` 進行訓練。
 3. **註冊表紀錄 (Logging & Registry)**: 所有的訓練結果（包括使用的參數與是否經過 R-GAN 處理）將被彙整寫入 `lora_registry.json`，方便後續應用程式呼叫。
-4. **自動科學驗證 (Automated Evaluation)**: 模型訓練完成後，會自動生成測試圖，並利用 InsightFace 計算測試圖與原圖的餘弦相似度 (Cosine Similarity)，將客觀的量化分數回寫至註冊表。
+4. **自動科學驗證與黃金引數決策 (Automated Evaluation & Golden Rules)**: 模型訓練完成後，會自動執行「文生圖天花板測試」與「Inpainting 壓力測試」兩階段驗收，並利用 InsightFace 計算相似度，將找出各場景的黃金引數回寫至註冊表。
 5. **雲端與地端雙支援**: 系統會自動偵測執行環境。無論是在本機端，或是打包丟上 Google Colab，都能無縫切換路徑繼續執行。
 
 ## 📂 專案架構
@@ -91,7 +107,7 @@ Face_LoRA_Pipeline/
 
 ### 方式一：在本地端執行 (Local Execution)
 
-1. 將欲訓練的目標圖片放入 `training_data/` 目錄中。請以目標名稱作為資料夾名稱，例如：`training_data/Alex/` 裡面放 Alex 的照片。
+1. 將欲訓練的目標圖片放入 `training_data/` 目錄中。請以目標名稱 `{FACE_ID}` 作為資料夾名稱，例如：`training_data/face_id_001/` 裡面放 face_id_001 的照片。
 2. 根據需求修改 `config.py` 中的參數（例如：開關 R-GAN、調整 Learning Rate）。
 3. 執行主程式：
    ```bash

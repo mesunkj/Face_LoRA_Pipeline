@@ -107,3 +107,33 @@ KOHYA_DIR = os.path.join(BASE_DIR, "kohya_ss")
    - 動態計算適合的訓練步數 (max_train_steps)。
    - 將訓練參數與素材拋給 `kohya_ss` 開始真正的模型訓練。
    - 訓練產出的模型會自動儲存到您 Google Drive 的 `Face_LoRA_Pipeline/output/models/Model_A.safetensors`。
+
+---
+
+## 階段四：升級版自動化驗收與黃金引數決策 (第 6 階段)
+
+當您的模型訓練完成後，我們強烈建議您執行位於 `colab_runner.ipynb` 最尾端的**「第 6 階段：自動化驗收與黃金引數決策系統」**，它會幫助您進行深度的測試並找出最佳生成參數。
+
+### 步驟 1：準備標準靶圖 (Optional)
+若要進行 Inpainting 壓力測試，請確保您的 Google Drive 專案目錄下有 `benchmark_images/` 資料夾，並在其中放入 5 張對應極端場景的測試底圖。
+**⚠️ 重要命名規定**：為了讓系統知道哪張圖對應哪個場景，您的圖檔名稱必須包含以下關鍵字（例如 `standard.jpg`, `close_up.png` 等）：
+* `standard` (標準人像)
+* `close_up` (特寫)
+* `wide` (廣角全身)
+* `low_light` (低光源)
+* `profile` (側臉)
+
+若無此資料夾或檔名配對失敗，系統將僅執行「文生圖天花板測試」，自動略過 Inpainting 而不會報錯。
+
+### 步驟 2：修改測試對象
+在第 6 階段的儲存格中，找到以下變數並修改為您剛訓練好的臉部 ID：
+```python
+FACE_ID = "您的模型名稱"  # 例如: "Model_A"
+```
+
+### 步驟 3：獨立執行驗收
+直接點擊執行該儲存格。系統將自動：
+1. 為您繪製所有場景的測試圖，並儲存於 `output/eval/{FACE_ID}_standalone/`。
+2. 計算與真實照片的 InsightFace 相似度。
+3. 輸出包含**圖檔代號 (Identifier)**、**提示詞 (Prompt)**、**所有引數**以及**相似度分數 (Score)** 的完整 `evaluation_matrix.csv` 檢驗報告。
+4. 自動將各場景的「黃金引數」回寫至專案根目錄的 `lora_registry.json` 中，供未來其他系統快速調用。
