@@ -39,8 +39,16 @@ NETWORK_DIM = 64
 NETWORK_ALPHA = 32
 
 # Evaluation Configuration
-EVAL_PROMPT_TEMPLATE = "A portrait of {trigger_word}, raw photo, highly detailed, 8k uhd, dslr"
+EVAL_PROMPTS = {
+    "scene_standard": "A portrait of {trigger_word}, raw photo, highly detailed, 8k uhd, dslr",
+    "scene_close_up": "A macro close-up of {trigger_word}'s face, highly detailed, 8k uhd, dslr",
+    "scene_wide": "A wide angle shot of {trigger_word}, full body, highly detailed, 8k uhd, dslr",
+    "scene_low_light": "A portrait of {trigger_word} in low light neon cyberpunk, highly detailed, 8k uhd",
+    "scene_profile": "A side profile portrait of {trigger_word}, highly detailed, 8k uhd, dslr"
+}
 EVAL_NEGATIVE_PROMPT = "blurry, out of focus, disfigured, low quality, bad anatomy"
 NUM_TEST_IMAGES = 10
-EVAL_MODEL_CHECKPOINT = "v1-5-pruned-emaonly.safetensors" # Base model for evaluation generation
-SIMILARITY_THRESHOLD = 0.50 # 50% threshold for passing (InsightFace cosine similarity)
+EVAL_MODEL_CHECKPOINT = "runwayml/stable-diffusion-v1-5"
+SIMILARITY_THRESHOLD = 0.50
+FIXED_SEED = 42
+EVAL_OUTPUT_DIR_TEMPLATE = os.path.join(OUTPUT_DIR, "eval", "{face_id}_standalone")
